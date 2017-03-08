@@ -1,0 +1,390 @@
+namespace matching
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        // RNG is king
+        Random monNum = new Random();
+
+        // List of monsters and parts
+        List<string> monsters = new List<string>();
+        List<string> monsterParts = new List<string>();
+
+        // The correct matching pair
+        string chosenMonster;
+        string chosenPart;
+
+        // The red scatterfish
+        string badPart1;
+        string badPart2;
+
+        // Cheat toggle for people who don't hunt monsters
+        int cheatToggle = 0;
+
+        // Jho always gets his lunch in 5 false matches
+        int jhoApproach = 5;
+
+        // Palico takes a random nyumber..I mean number of turns to catch his fish
+        Random fishNum = new Random();
+        int fishTurns;
+
+        // The randomizer for answer labels
+        List<string> answers = new List<string>();
+
+        // Clueless Palico dialog
+       string[] goneFishin = {"Fishin' is meow mission!", "Sashimi is meow favorite!", "*whistles innocently*", "I'm nyat afraid of meownsters!", "I've got a nyibble!", "Nya, it got away..."};
+
+        // Resets the game after every answer
+       private void resetGame()
+       {
+           // Repopulate the lists
+           populate();
+
+           // Choose monster and parts
+           randMonster();
+           monsterLabel.Text = chosenMonster;
+
+           // Randomize the answer positions and fill in the labels
+           randAnswers();
+
+           // Uncheck all the answer buttons
+           uncheckButtons();
+       }
+
+        // Clean up after either a win or lose
+       private void clearGame()
+       {
+           instructionLabel.Visible = false;
+           choiceOneButton.Visible = false;
+           choiceTwoButton.Visible = false;
+           choiceThreeButton.Visible = false;
+           monsterLabel.Visible = false;
+           submitButton.Visible = false;
+           cheatPanel.Visible = false;
+       }
+
+        // Read the file of matches and populate the lists
+        private void populate()
+        {
+            // Just in case RESET was chosen, let's clear the lists first
+            monsters.Clear();
+            monsterParts.Clear();
+
+            string stuff;
+            try
+            {
+                StreamReader inputfile;
+                inputfile = File.OpenText("something.txt");
+                while (!inputfile.EndOfStream)
+                {
+                    stuff = inputfile.ReadLine();
+                    char[] delim = { ';' };
+                    string[] tokens = stuff.Split(delim);
+                    monsters.Add(tokens[0]);
+                    monsterParts.Add(tokens[1]);
+                }
+                inputfile.Close();
+            }
+            catch
+            {
+                MessageBox.Show("populate function failed.");
+            }
+            //MessageBox.Show("Number of monsters is " + monsters.Count.ToString() + ".");
+        }
+
+        // Uncheck the three radio buttons
+        private void uncheckButtons()
+        {
+            choiceOneButton.Checked = false;
+            choiceTwoButton.Checked = false;
+            choiceThreeButton.Checked = false;
+        }
+
+        // Choose a random monster and parts
+        private void randMonster()
+        {
+            // These lists will never be empty because the game resets
+            int randNum = monNum.Next(monsters.Count());
+            chosenMonster = monsters[randNum];
+            chosenPart = monsterParts[randNum];
+            monsters.Remove(monsters[randNum]);
+            monsterParts.Remove(monsterParts[randNum]);
+
+            int badNum1 = monNum.Next(monsterParts.Count());
+            badPart1 = monsterParts[badNum1];
+            monsterParts.Remove(monsterParts[badNum1]);
+
+            int badNum2 = monNum.Next(monsterParts.Count());
+            badPart2 = monsterParts[badNum2];
+            monsterParts.Remove(monsterParts[badNum2]);
+
+            if (cheatToggle == 1)
+            {
+                MessageBox.Show("Chosen monster is " + chosenMonster + " (" + chosenPart + ").");
+                //MessageBox.Show("Bad parts are " + badPart1 + " and " + badPart2 + ".");
+            }
+        }
+
+        // Randomize the answer buttons
+        private void randAnswers()
+        {
+            // Set up the pool of possible answers
+            // Clear it first in case RESET was chosen
+            answers.Clear();
+
+            answers.Add(chosenPart);
+            answers.Add(badPart1);
+            answers.Add(badPart2);
+
+            Random ans = new Random();
+            int ansNum1 = ans.Next(3);
+            int ansNum2 = ans.Next(2);
+
+            // This works... So far
+            //MessageBox.Show("ansNum1 = " + ansNum1.ToString());
+            choiceOneButton.Text = answers[ansNum1];
+            answers.Remove(answers[ansNum1]);
+            choiceTwoButton.Text = answers[ansNum2];
+            answers.Remove(answers[ansNum2]);
+            choiceThreeButton.Text = answers[0];
+
+            uncheckButtons();
+        }
+
+        // EXIT the game
+        private void exitButton_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        // Initialize the game
+        private void playButton_Click(object sender, EventArgs e)
+        {
+            // Read the file and populate the lists
+            populate();
+            playButton.Visible = false;
+            infoButton.Visible = false;
+
+            // Choose monster and parts
+            randMonster();
+            monsterLabel.Text = chosenMonster;
+
+            // Randomize the answer positions and fill in the labels
+            randAnswers();
+
+            // Random number of turns it takes the Palico to catch his fish, between 3 and 10
+            fishTurns = fishNum.Next(3, 10);
+
+            // Make labels and buttons visible
+            instructionLabel.Visible = true;
+            monsterLabel.Visible = true;
+            //fishinLabel.Visible = true;
+            choiceOneButton.Visible = true;
+            choiceTwoButton.Visible = true;
+            choiceThreeButton.Visible = true;
+            cheatPanel.Visible = true;
+            submitButton.Visible = true;
+        }
+
+        // Test answer
+        private void submitButton_Click(object sender, EventArgs e)
+        {
+            // Make sure there's something selected
+            if ((choiceOneButton.Checked == false) && (choiceTwoButton.Checked == false) && (choiceThreeButton.Checked == false))
+            {
+                MessageBox.Show("Please make a guess.");
+            }
+            else
+                // Random clueless Palico dialog
+                fishinDialog();
+            {
+                // Doing this the hard way for now;
+                // otherwise, there is a way to detect
+                // which button is checked
+                if (choiceOneButton.Checked)
+                {
+                    if (choiceOneButton.Text == chosenPart)
+                    {
+                        MessageBox.Show("You are correct! " + chosenMonster + " drops " + choiceOneButton.Text + ".");
+                        // Test to see if the Palico has caught his fish
+                        testPalico();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nope. " + chosenMonster + " does NOT drop " + choiceOneButton.Text + ".");
+                        // Jho gets the initiative.
+                        testJho();
+                    }
+                }
+                if (choiceTwoButton.Checked)
+                {
+                    if (choiceTwoButton.Text == chosenPart)
+                    {
+                        MessageBox.Show("You are correct! " + chosenMonster + " drops " + choiceTwoButton.Text + ".");
+                        // Test to see if the Palico has caught his fish
+                        testPalico();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nope. " + chosenMonster + " does NOT drop " + choiceTwoButton.Text + ".");
+                        // Jho gets the initiative.
+                        testJho();
+                    }
+                }
+                if (choiceThreeButton.Checked)
+                {
+                    if (choiceThreeButton.Text == chosenPart)
+                    {
+                        MessageBox.Show("You are correct! " + chosenMonster + " drops " + choiceThreeButton.Text + ".");
+                        // Test to see if the Palico has caught his fish
+                        testPalico();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nope. " + chosenMonster + " does NOT drop " + choiceThreeButton.Text + ".");
+                        // Jho gets the initiative.
+                        testJho();
+                    }
+                }
+            }
+        }
+
+        // Reset the game; NOTE: I'm not going to use a reset button anymore; it will auto reset
+        private void resetButton_Click(object sender, EventArgs e)
+        {
+            // Repopulate the lists
+            populate();
+
+            // Choose monster and parts
+            randMonster();
+            monsterLabel.Text = chosenMonster;
+
+            // Randomize the answer positions and fill in the labels
+            randAnswers();
+
+            // Swap the buttons
+            //resetButton.Visible = false;
+            //submitButton.Visible = true;
+        }
+
+        // Decrement fishing countdown; test to see if the Palico caught his fish,
+        // otherwise, reset the game
+        private void testPalico()
+        {
+            fishTurns = fishTurns - 1;
+            if (fishTurns == 0)
+            {
+                MessageBox.Show("YOU WIN! Your Palico has his fish, and Jho goes hungry.");
+                // Let the little twit gloat.
+                fishinLabel.Text = "NYA! NYA! NYA!";
+                fishPic.Visible = true;
+
+                // Jho goes his lonely way.
+                if ((jhoPic1.Visible) || (jhoPic2.Visible) || (jhoPic3.Visible) || (jhoPic4.Visible))
+                {
+                    tailPic.Visible = true;
+                    jhoLabel.Visible = true;
+                }
+
+                jhoPic1.Visible = false;
+                jhoPic2.Visible = false;
+                jhoPic3.Visible = false;
+                jhoPic4.Visible = false;
+                jhoPic5.Visible = false;
+                jhoPic6.Visible = false;
+
+                // Let's clean up the game while we're at it.
+                clearGame();
+            }
+            else
+            {
+                resetGame();
+            }
+        }
+
+        // Decrement Jho's lunch countdown; test to see if he catches the Palico,
+        // otherwise, test the Palico. Jho has the initiative.
+        private void testJho()
+        {
+            jhoApproach = jhoApproach - 1;
+            picSwap();
+            if (jhoApproach == 0)
+            {
+                MessageBox.Show("YOU LOSE. Jho has eaten your Palico.");
+            }
+            else
+            {
+                testPalico();
+            }
+        }
+
+        // Swap pictures of Jho's ugly mug
+        private void picSwap()
+        {
+            switch (jhoApproach)
+            {
+                case 4:
+                    jhoPic1.Visible = true;
+                    break;
+
+                case 3:
+                    jhoPic1.Visible = false;
+                    jhoPic2.Visible = true;
+                    break;
+
+                case 2:
+                    jhoPic2.Visible = false;
+                    jhoPic3.Visible = true;
+                    break;
+
+                case 1:
+                    jhoPic3.Visible = false;
+                    jhoPic4.Visible = true;
+                    break;
+
+                case 0:
+                    clearGame();
+                    jhoPic4.Visible = false;
+                    jhoPic5.Visible = true;
+                    jhoPic6.Visible = true;
+                    palicoPic.Visible = false;
+                    helmetPic.Visible = true;
+                    fishinLabel.Visible = false;
+                    break;
+                    
+                default:
+                    MessageBox.Show("picSwap is having a crisis.");
+                    break;
+            }
+        }
+
+        // Random silly palico dialog
+        private void fishinDialog()
+        {
+            Random fishTale = new Random();
+            int fishDex = fishTale.Next(goneFishin.Count());
+            fishinLabel.Text = goneFishin[fishDex];
+        }
+
+        // Some people actually don't play Monster Hunter. Weird.
+        private void cheatsOn_CheckedChanged(object sender, EventArgs e)
+        {
+            cheatToggle = 1;
+        }
+
+        private void cheatsOff_CheckedChanged(object sender, EventArgs e)
+        {
+            cheatToggle = 0;
+        }
+
+        // PALICO PANIC!
+        private void infoButton_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Palico Panic is based on the Monster Hunter franchise from Capcom. A Palico is a bipedal talking cat (just go with it) and Deviljho is... well, you'll find out.");
+        }
+    }
+}
